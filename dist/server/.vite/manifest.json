@@ -1,0 +1,18 @@
+{
+  "src/entry-server.jsx": {
+    "file": "entry-server.js",
+    "name": "entry-server",
+    "src": "src/entry-server.jsx",
+    "isEntry": true,
+    "css": [
+      "assets/entry-server-IlqBQBip.css"
+    ],
+    "assets": [
+      "assets/excerptw-BF0eAUgD.webp",
+      "assets/excerptb-JqlEiHrT.webp",
+      "assets/NotoSansBold-CTHeVQvw.ttf",
+      "assets/ajax-loader-BcnMEykj.gif",
+      "assets/slick-BlzDm7g2.svg"
+    ]
+  }
+}
