@@ -20236,259 +20236,9 @@ function StudentForm() {
   ] });
 }
 const NunitoBold = "/assets/NotoSansBold-CTHeVQvw.ttf";
-function Studentcertificate({ students }) {
-  const [courseStudents, setCourseStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedDateMap, setSelectedDateMap] = useState({});
-  const [selectedCourse, setSelectedCourse] = useState("");
-  const [selectedYOP, setSelectedYOP] = useState("");
-  const [selectedCollege, setSelectedCollege] = useState("");
-  const [courses, setCourses] = useState([]);
-  const [years, setYears] = useState([]);
-  const [colleges, setColleges] = useState([]);
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await axios.get("/api/courseStudents");
-        setCourseStudents(response.data);
-        setLoading(false);
-        const uniqueCourses = [...new Set(response.data.map((student) => student.course))];
-        const uniqueYears = [...new Set(response.data.map((student) => student.yop))];
-        const uniqueColleges = [...new Set(response.data.map((student) => student.collegeName))];
-        setCourses(uniqueCourses);
-        setYears(uniqueYears);
-        setColleges(uniqueColleges);
-      } catch (error) {
-        console.error("Error fetching data:", error.message);
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-  const filteredStudents = courseStudents.filter(
-    (student) => (selectedCourse ? student.course === selectedCourse : true) && (selectedYOP ? student.yop === selectedYOP : true) && (selectedCollege ? student.collegeName === selectedCollege : true)
-  );
-  const handleCourseChange = (e) => {
-    setSelectedCourse(e.target.value);
-  };
-  const handleYOPChange = (e) => {
-    setSelectedYOP(e.target.value);
-  };
-  const handleCollegeChange = (e) => {
-    setSelectedCollege(e.target.value);
-  };
-  const splitTextIntoLines = (text, maxWidth, font, fontSize) => {
-    const words = text.split(" ");
-    const lines = [];
-    let currentLine = words[0];
-    for (let i = 1; i < words.length; i++) {
-      const word = words[i];
-      const testLine = currentLine + " " + word;
-      const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-      if (testWidth <= maxWidth) {
-        currentLine = testLine;
-      } else {
-        lines.push(currentLine);
-        currentLine = word;
-      }
-    }
-    lines.push(currentLine);
-    return lines;
-  };
-  const downloadCertificate = async (student) => {
-    const { name, fatherName, course, softwareCovered, regNo, collegeName, from, to, gender } = student;
-    const selectedDate = selectedDateMap[name] || "";
-    if (!selectedDate) {
-      alert("Please select a date before downloading the certificate.");
-      return;
-    }
-    try {
-      const existingPdfBytes = await fetch("/cert30.pdf").then((res) => res.arrayBuffer());
-      const pdfDoc = await PDFDocument.load(existingPdfBytes);
-      pdfDoc.registerFontkit(fontkit);
-      const fontBytes = await fetch(NunitoBold).then((res) => res.arrayBuffer());
-      const customFont = await pdfDoc.embedFont(fontBytes);
-      const pages = pdfDoc.getPages();
-      const firstPage = pages[0];
-      const fontBytesStudentName = await fetch(NunitoBold).then((res) => res.arrayBuffer());
-      const customFontStudentName = await pdfDoc.embedFont(fontBytesStudentName);
-      const upperCaseStudentName = name ? name.toUpperCase() : "";
-      const upperCasecollegeName = collegeName ? collegeName.toUpperCase() : "";
-      const upperCaseSoftwareCovered = softwareCovered ? softwareCovered.toUpperCase() : "";
-      let title, pronoun, pronoun1, middleText, conclusionText;
-      if (gender === "Male") {
-        title = "Mr.";
-        pronoun = "him";
-        pronoun1 = "his";
-        middleText = ` bearing Registration Number: ${regNo}, a student of ${upperCasecollegeName}, has successfully completed an internship course from ${from} to ${to} at EXCERPT TECHNOLOGIES PVT LTD. During his internship, `;
-        conclusionText = `${pronoun.charAt(0).toUpperCase()}${pronoun1.slice(1)} conduct during ${pronoun1} stay with us was satisfactory. We wish ${pronoun} all the best for ${pronoun1} future endeavors.`;
-      } else if (gender === "Female") {
-        title = "Ms.";
-        pronoun = "her";
-        middleText = ` bearing Registration Number: ${regNo}, a student of ${upperCasecollegeName}, has successfully completed an internship course from ${from} to ${to} at EXCERPT TECHNOLOGIES PVT LTD. During her internship, `;
-        conclusionText = `${pronoun.charAt(0).toUpperCase()}${pronoun.slice(1)} conduct during ${pronoun} stay with us was satisfactory. We wish ${pronoun} all the best for ${pronoun} future endeavors.`;
-      } else {
-        console.error("Invalid gender:", gender);
-        return;
-      }
-      const introText = `This is to certify that `;
-      const nameText = `${title} ${upperCaseStudentName}`;
-      const endingText = ` worked as an Intern in "${softwareCovered}" and gained experience in the following areas:`;
-      const maxWidth = 460;
-      const fontSize = 12;
-      const lineHeight = 23;
-      const lineGap = 5;
-      let yPos = firstPage.getHeight() - 300;
-      const drawTextWithHighlight = (text, isHighlighted, isBold, x, y) => {
-        const color = isHighlighted ? rgb(1, 1, 1) : rgb(0, 0, 0);
-        const fontWeight = isBold ? "bold" : "normal";
-        const parts = text.split(/(Mr\.|Miss\.)/);
-        let currentX2 = x;
-        parts.forEach((part) => {
-          const width = customFont.widthOfTextAtSize(part, fontSize);
-          firstPage.drawText(part, {
-            x: currentX2,
-            y,
-            size: fontSize,
-            font: customFont,
-            color,
-            fontWeight
-            // Apply bold font weight if necessary
-          });
-          currentX2 += width;
-        });
-      };
-      let lines = splitTextIntoLines(introText + nameText + middleText + nameText + endingText, maxWidth, customFont, fontSize);
-      let currentX = 70;
-      let currentY = yPos;
-      lines.forEach((line, index) => {
-        drawTextWithHighlight(line, false, true, currentX, currentY - index * (lineHeight + lineGap));
-      });
-      currentY -= lines.length * (lineHeight + lineGap) + lineGap;
-      const bulletPointLines = [
-        "• Research and analysis",
-        "• Writing Code",
-        "• Preparing Documentation"
-      ];
-      bulletPointLines.forEach((line, index) => {
-        firstPage.drawText(line, {
-          x: 70,
-          y: currentY - index * (lineHeight + lineGap),
-          size: fontSize,
-          font: customFont,
-          color: rgb(0, 0, 0)
-        });
-      });
-      currentY -= bulletPointLines.length * (lineHeight + lineGap) + lineGap;
-      const conclusionLines = splitTextIntoLines(conclusionText, maxWidth, customFont, fontSize);
-      conclusionLines.forEach((line, index) => {
-        firstPage.drawText(line, {
-          x: 70,
-          y: currentY - index * (lineHeight + lineGap),
-          size: fontSize,
-          font: customFont,
-          color: rgb(0, 0, 0)
-        });
-      });
-      const qrCodeData = `https://www.excerptech.com/certificate1.html?REG_NO=${regNo}`;
-      const qrCodeDataURL = await QRCode.toDataURL(qrCodeData);
-      const base64Data = qrCodeDataURL.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-      const qrCodeImage = await pdfDoc.embedPng(base64Data);
-      const qrCodeWidth = 80;
-      const qrCodeHeight = 80;
-      firstPage.drawImage(qrCodeImage, {
-        x: 65,
-        y: 80,
-        width: qrCodeWidth,
-        height: qrCodeHeight
-      });
-      const modifiedPdfBytes = await pdfDoc.save();
-      const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Certificate_${name}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error generating certificate:", error.message);
-    }
-  };
-  const handleDateChange = (e, studentName) => {
-    const { value } = e.target;
-    setSelectedDateMap((prevState) => ({
-      ...prevState,
-      [studentName]: value
-    }));
-  };
-  return /* @__PURE__ */ jsxs("div", { children: [
-    /* @__PURE__ */ jsxs("div", { className: "filter-container", style: { display: "flex" }, children: [
-      /* @__PURE__ */ jsxs("div", { className: "filter", children: [
-        /* @__PURE__ */ jsx("label", { children: "Courses:" }),
-        /* @__PURE__ */ jsxs("select", { value: selectedCourse, onChange: handleCourseChange, children: [
-          /* @__PURE__ */ jsx("option", { value: "", children: "All Courses" }),
-          courses.map((course, index) => /* @__PURE__ */ jsx("option", { value: course, children: course }, index))
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxs("div", { className: "filter", children: [
-        /* @__PURE__ */ jsx("label", { children: "Year of Passing:" }),
-        /* @__PURE__ */ jsxs("select", { value: selectedYOP, onChange: handleYOPChange, children: [
-          /* @__PURE__ */ jsx("option", { value: "", children: "All Years" }),
-          years.map((year, index) => /* @__PURE__ */ jsx("option", { value: year, children: year }, index))
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxs("div", { className: "filter", children: [
-        /* @__PURE__ */ jsx("label", { children: "College Name:" }),
-        /* @__PURE__ */ jsxs("select", { value: selectedCollege, onChange: handleCollegeChange, children: [
-          /* @__PURE__ */ jsx("option", { value: "", children: "All Colleges" }),
-          colleges.map((college, index) => /* @__PURE__ */ jsx("option", { value: college, children: college }, index))
-        ] })
-      ] })
-    ] }),
-    /* @__PURE__ */ jsx("div", { className: "card-container", children: filteredStudents.map((student, index) => /* @__PURE__ */ jsxs("div", { className: "card", children: [
-      /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsx(
-          "img",
-          {
-            src: `/${student.regNo}.png`,
-            alt: `Image of ${student.name}`,
-            style: { width: "100px", height: "100px", borderRadius: "50%" }
-          }
-        ),
-        /* @__PURE__ */ jsxs("div", { className: "info-container", children: [
-          /* @__PURE__ */ jsx("div", { className: "label", children: "Name:" }),
-          /* @__PURE__ */ jsx("h3", { children: student.name.toUpperCase() }),
-          /* @__PURE__ */ jsx("div", { className: "label", children: "Course:" }),
-          /* @__PURE__ */ jsx("p", { children: student.course }),
-          /* @__PURE__ */ jsx("div", { className: "label", children: "Year of Passing:" }),
-          /* @__PURE__ */ jsx("p", { children: student.yop }),
-          /* @__PURE__ */ jsx("div", { className: "label", children: "Software Covered:" }),
-          /* @__PURE__ */ jsx("p", { children: student.softwareCovered }),
-          /* @__PURE__ */ jsx("div", { className: "label", children: "regNo:" }),
-          /* @__PURE__ */ jsx("p", { children: student.regNo }),
-          /* @__PURE__ */ jsx("div", { className: "label", children: "College Name:" }),
-          /* @__PURE__ */ jsx("p", { children: student.collegeName }),
-          /* @__PURE__ */ jsx("div", { className: "label", children: "From Date:" }),
-          /* @__PURE__ */ jsx("p", { children: student.from }),
-          /* @__PURE__ */ jsx("div", { className: "label", children: "To Date:" }),
-          /* @__PURE__ */ jsx("p", { children: student.to })
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxs("div", { className: "button-container", children: [
-        /* @__PURE__ */ jsx(
-          "input",
-          {
-            type: "date",
-            value: selectedDateMap[student.name] || "",
-            onChange: (e) => handleDateChange(e, student.name)
-          }
-        ),
-        /* @__PURE__ */ jsx("a", { href: `https://excerptech.com/certificate1.html?REG_NO=${student.regNo}`, target: "_blank", rel: "noopener noreferrer", children: "View Certificate" })
-      ] }),
-      /* @__PURE__ */ jsx("button", { onClick: () => downloadCertificate(student), children: "Download Certificate" })
-    ] }, index)) })
-  ] });
+// Studentcertificate component removed. Replaced with a safe stub to avoid breaking references.
+function Studentcertificate() {
+  return null;
 }
 const Internregistrationform = () => {
   const [formData, setFormData] = useState({
@@ -20499,8 +20249,7 @@ const Internregistrationform = () => {
     PHOTO: "",
     college_id: "",
     Course_id: "",
-    Certificate_Type_id: "",
-    Course_Certificate_Type_id: "",
+    
     yop: "",
     Role: "",
     From: "",
@@ -20510,30 +20259,21 @@ const Internregistrationform = () => {
   });
   const [colleges, setColleges] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [certificateTypes, setCertificateTypes] = useState([]);
   const qualifications = ["BE", "Diploma"];
   const genders = ["MALE", "FEMALE", "OTHER"];
-  const Course_Certificate_Type_id = [301, 302];
-  const courseCertificateOptions = {
-    301: "Internship",
-    302: "Project"
-  };
   useEffect(() => {
     fetchLookupData();
   }, []);
   const fetchLookupData = async () => {
     try {
-      const [collegesRes, coursesRes, certificateTypesRes] = await Promise.all([
+      const [collegesRes, coursesRes] = await Promise.all([
         fetch("/api/colleges"),
-        fetch("/api/courses"),
-        fetch("/api/certificateTypes")
+        fetch("/api/courses")
       ]);
       const collegesData = await collegesRes.json();
       const coursesData = await coursesRes.json();
-      const certificateTypesData = await certificateTypesRes.json();
       setColleges(collegesData);
       setCourses(coursesData);
-      setCertificateTypes(certificateTypesData);
     } catch (error) {
       toast.error("Error fetching lookup data");
       console.error("Fetch error:", error);
@@ -20561,15 +20301,7 @@ const Internregistrationform = () => {
     const selectedCourse = courses[selectedIndex - 1];
     setFormData((prev) => ({ ...prev, Course_id: selectedCourse.courseId }));
   };
-  const handleCertificateTypeChange = (e) => {
-    const selectedIndex = e.target.selectedIndex;
-    if (selectedIndex === 0) {
-      setFormData((prev) => ({ ...prev, Certificate_Type_id: "" }));
-      return;
-    }
-    const selectedCertType = certificateTypes[selectedIndex - 1];
-    setFormData((prev) => ({ ...prev, Certificate_Type_id: selectedCertType.Certificate_Type_id }));
-  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -20596,10 +20328,8 @@ const Internregistrationform = () => {
       FATHER_NAME: "",
       REG_NO: "",
       PHOTO: "",
-      Course_Certificate_Type_id: "",
       college_id: "",
       Course_id: "",
-      Certificate_Type_id: "",
       yop: "",
       Role: "",
       From: "",
@@ -20798,7 +20528,7 @@ const Internregistrationform = () => {
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { style: styles2.formGrid, children: [
+        /* @__PURE__ */ jsxs("div", { style: styles2.formGrid, children: [
         /* @__PURE__ */ jsxs("div", { style: styles2.inputGroup, children: [
           /* @__PURE__ */ jsx("label", { htmlFor: "GENDER", style: styles2.label, children: "Gender" }),
           /* @__PURE__ */ jsxs(
@@ -20820,22 +20550,7 @@ const Internregistrationform = () => {
         ] }),
         /* @__PURE__ */ jsxs("div", { style: styles2.inputGroup, children: [
           /* @__PURE__ */ jsx("label", { htmlFor: "Course_Certificate_Type_id", style: styles2.label, children: "Course Certificate Type" }),
-          /* @__PURE__ */ jsxs(
-            "select",
-            {
-              id: "Course_Certificate_Type_id",
-              value: formData.Course_Certificate_Type_id,
-              onChange: handleChange,
-              required: true,
-              style: styles2.select,
-              onFocus: getFocusStyles,
-              onBlur: getBlurStyles,
-              children: [
-                /* @__PURE__ */ jsx("option", { value: "", children: "Select Course Certificate Type" }),
-                Course_Certificate_Type_id.map((type) => /* @__PURE__ */ jsx("option", { value: type, children: courseCertificateOptions[type] || "Unknown Certificate" }, type))
-              ]
-            }
-          )
+          /* @__PURE__ */ jsx("input", { type: "hidden", id: "Course_Certificate_Type_id", value: "" })
         ] })
       ] }),
       /* @__PURE__ */ jsxs("div", { style: styles2.formGrid, children: [
@@ -20885,7 +20600,7 @@ const Internregistrationform = () => {
           /* @__PURE__ */ jsx("input", { type: "hidden", id: "college_id", value: formData.college_id })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { style: styles2.formGrid, children: [
+        /* @__PURE__ */ jsxs("div", { style: styles2.formGrid, children: [
         /* @__PURE__ */ jsxs("div", { style: styles2.inputGroup, children: [
           /* @__PURE__ */ jsx("label", { htmlFor: "course_select", style: styles2.label, children: "Course" }),
           /* @__PURE__ */ jsxs(
@@ -20914,29 +20629,8 @@ const Internregistrationform = () => {
         ] }),
         /* @__PURE__ */ jsxs("div", { style: styles2.inputGroup, children: [
           /* @__PURE__ */ jsx("label", { htmlFor: "certificate_select", style: styles2.label, children: "Certificate Type" }),
-          /* @__PURE__ */ jsxs(
-            "select",
-            {
-              id: "certificate_select",
-              onChange: handleCertificateTypeChange,
-              required: true,
-              style: styles2.select,
-              onFocus: getFocusStyles,
-              onBlur: getBlurStyles,
-              children: [
-                /* @__PURE__ */ jsx("option", { value: "", children: "Select Certificate Type" }),
-                certificateTypes.map((certType) => /* @__PURE__ */ jsx(
-                  "option",
-                  {
-                    value: certType.Certificate_Type_id || certType.Course_Certificate_Type_id || "",
-                    children: certType.Certificate_Name || certType.Certification_Name || "Certificate Type Missing"
-                  },
-                  certType._id
-                ))
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsx("input", { type: "hidden", id: "Certificate_Type_id", value: formData.Certificate_Type_id })
+          /* @__PURE__ */ jsx("input", { type: "hidden", id: "certificate_select", value: "" }),
+          /* @__PURE__ */ jsx("input", { type: "hidden", id: "Certificate_Type_id", value: "" })
         ] })
       ] }),
       /* @__PURE__ */ jsxs("div", { style: styles2.formGrid, children: [
@@ -27344,7 +27038,7 @@ const Dashboard = () => {
         /* @__PURE__ */ jsx("li", { className: "nav-item", style: { margin: "20px" }, children: /* @__PURE__ */ jsx("button", { className: "mdi mdi-palette menu-icon menu-title menu-arrow", children: /* @__PURE__ */ jsx(Link, { to: "Quotation", style: { color: "white" }, children: "Quotation" }) }) }),
         /* @__PURE__ */ jsx("li", { className: "nav-item", style: { margin: "20px" }, children: /* @__PURE__ */ jsx("button", { className: "mdi mdi-palette menu-icon menu-title menu-arrow", children: /* @__PURE__ */ jsx(Link, { to: "resume", style: { color: "white" }, children: "Resumes" }) }) }),
         /* @__PURE__ */ jsx("li", { className: "nav-item", style: { margin: "20px" }, children: /* @__PURE__ */ jsx("button", { className: "mdi mdi-palette menu-icon menu-title menu-arrow", children: /* @__PURE__ */ jsx(Link, { to: "studentform", style: { color: "white" }, children: "Student Form" }) }) }),
-        /* @__PURE__ */ jsx("li", { className: "nav-item", style: { margin: "20px" }, children: /* @__PURE__ */ jsx("button", { className: "mdi mdi-palette menu-icon menu-title menu-arrow", children: /* @__PURE__ */ jsx(Link, { to: "studentcertificate", style: { color: "white" }, children: "Student Certificate" }) }) }),
+        /* studentcertificate menu item removed */
         /* @__PURE__ */ jsx("li", { className: "nav-item", style: { margin: "20px" }, children: /* @__PURE__ */ jsx("button", { className: "mdi mdi-palette menu-icon menu-title menu-arrow", children: /* @__PURE__ */ jsx(Link, { to: "certificate", style: { color: "white" }, children: "Certificate" }) }) }),
         /* @__PURE__ */ jsx("li", { className: "nav-item", style: { margin: "20px" }, children: /* @__PURE__ */ jsx("button", { className: "mdi mdi-palette menu-icon menu-title menu-arrow", children: /* @__PURE__ */ jsx(Link, { to: "internform", style: { color: "white" }, children: "Intern Registration Form" }) }) }),
         /* @__PURE__ */ jsx("li", { className: "nav-item", style: { margin: "20px" }, children: /* @__PURE__ */ jsx("button", { className: "mdi mdi-palette menu-icon menu-title menu-arrow", children: /* @__PURE__ */ jsx(Link, { to: "indvisit", style: { color: "white" }, children: "Industrial Visit Certificate" }) }) })
@@ -34709,7 +34403,7 @@ We wish her great success in all of her future endeavors.`;
     ] }),
     /* @__PURE__ */ jsxs("div", { children: [
       /* @__PURE__ */ jsx("button", { onClick: handleGenerateCertificate, style: { marginLeft: "-9px", width: "200px", marginTop: "10px" }, children: "Get Certificate" }),
-      /* @__PURE__ */ jsx("a", { style: { marginLeft: "180px" }, href: `https://www.excerptech.com/certificate.html?REG_NO=${REG_NO}`, target: "_blank", rel: "noopener noreferrer", children: "View Certificate" })
+      /* @__PURE__ */ jsx("a", { style: { marginLeft: "180px" }, href: "#", children: "View Certificate" })
     ] })
   ] }) });
 }
@@ -35653,7 +35347,7 @@ function AppContent() {
         /* @__PURE__ */ jsx(Route, { path: "JobForm", element: /* @__PURE__ */ jsx(JobFormWithTable, {}) }),
         /* @__PURE__ */ jsx(Route, { path: "resume", element: /* @__PURE__ */ jsx(Resumes, {}) }),
         /* @__PURE__ */ jsx(Route, { path: "studentform", element: /* @__PURE__ */ jsx(StudentForm, {}) }),
-        /* @__PURE__ */ jsx(Route, { path: "studentcertificate", element: /* @__PURE__ */ jsx(Studentcertificate, {}) }),
+        /* studentcertificate route removed */
         /* @__PURE__ */ jsx(Route, { path: "internform", element: /* @__PURE__ */ jsx(Internregistrationform, {}) }),
         /* @__PURE__ */ jsx(Route, { path: "certificate", element: /* @__PURE__ */ jsx(Certificate, {}) }),
         /* @__PURE__ */ jsx(Route, { path: "indvisit", element: /* @__PURE__ */ jsx(Indvisit, {}) })
