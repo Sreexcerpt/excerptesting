@@ -10,16 +10,7 @@
   
 }
 body {
-  font-family: 'Verdana', sans-serif !important;
-}
-body {
-   
-   
-    /* font-family: "Nunito", sans-serif; */
-  
-    font-weight: 695;
- 
-   
+    font-family: 'Verdana', sans-serif !important;
 }
 
 a {
@@ -782,22 +773,9 @@ a {
     margin-right: 50px;
 }
 
-/*-- Padding Top --*/
+/*-- Padding Top/Bottom/Left/Right (placeholders removed) --*/
 
-/*-- Padding Bottom --*/
-
-/*-- Padding left --*/
-
-/*-- Padding right --*/
-
-/* Background Color */
-
-/* Color */
-
-.white {
-    color: #fff;
-}
-
+/* Color utilities */
 .black {
     color: #222;
 }

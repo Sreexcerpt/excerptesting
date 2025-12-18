@@ -1,12 +1,9 @@
 body {
-  font-family: 'Verdana', sans-serif !important;
+    font-family: 'Verdana', sans-serif !important;
+    font-weight: 695;
 }
 .white {
     color: #fff;
-}
-body {
-    font-weight: 695;
-   
 }
 
 #navbar-1 {
